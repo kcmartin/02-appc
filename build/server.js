@@ -51,7 +51,7 @@
 	var _test = __webpack_require__(2);
 	
 	(0, _test.blegh)();
-	throw new Error("BLEGH");
+	console.log("FROM SERVER");
 
 /***/ },
 /* 1 */
