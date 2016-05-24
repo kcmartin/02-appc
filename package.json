@@ -4,7 +4,7 @@
   "description": "modern javascript course webpack build pipeline",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node build/server"
   },
   "author": "KC Martin",
   "license": "MIT",
