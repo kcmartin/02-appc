@@ -1,3 +1,3 @@
-import {blegh} from "shared/test";
-
-blegh();
+export function blegh() {
+    console.log("IT WORKED");
+}

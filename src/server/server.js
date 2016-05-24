@@ -1,3 +1,3 @@
-export function blegh() {
-    console.log("IT WORKED!");
-}
+import {blegh} from "shared/test";
+
+blegh();
