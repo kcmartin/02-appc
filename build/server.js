@@ -46,12 +46,21 @@
 
 	"use strict";
 	
-	var _test = __webpack_require__(1);
+	__webpack_require__(1);
+	
+	var _test = __webpack_require__(2);
 	
 	(0, _test.blegh)();
+	throw new Error("BLEGH");
 
 /***/ },
 /* 1 */
+/***/ function(module, exports) {
+
+	module.exports = require("source-map-support/register");
+
+/***/ },
+/* 2 */
 /***/ function(module, exports) {
 
 	"use strict";
