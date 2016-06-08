@@ -60,6 +60,10 @@
 	
 	var _socket2 = _interopRequireDefault(_socket);
 	
+	var _chalk = __webpack_require__(5);
+	
+	var _chalk2 = _interopRequireDefault(_chalk);
+	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	var isDevelopment = process.env.NODE_ENV !== "production";
@@ -72,6 +76,31 @@
 	
 	//---------------------------
 	// Client Webpack
+	// middleware for DEV ONLY!!
+	if (process.env.USE_WEBPACK === "true") {
+	    var webpackMiddleware = __webpack_require__(6),
+	        webpackHotMiddleware = __webpack_require__(11),
+	        webpack = __webpack_require__(7),
+	        clientConfig = __webpack_require__(8);
+	
+	    var compiler = webpack(clientConfig);
+	    app.use(webpackMiddleware(compiler, {
+	        publicPath: "/build/",
+	        stats: {
+	            colors: true,
+	            chunks: false,
+	            assets: false,
+	            timings: false,
+	            modules: false,
+	            hash: false,
+	            version: false
+	        }
+	    }));
+	
+	    app.use(webpackHotMiddleware(compiler));
+	
+	    console.log(_chalk2.default.bgRed("Using WebPack Dev Middleware! THIS IS FOR DEV ONLY!"));
+	}
 	
 	//---------------------------
 	// Configure Express
@@ -129,6 +158,221 @@
 /***/ function(module, exports) {
 
 	module.exports = require("socket.io");
+
+/***/ },
+/* 5 */
+/***/ function(module, exports) {
+
+	module.exports = require("chalk");
+
+/***/ },
+/* 6 */
+/***/ function(module, exports) {
+
+	module.exports = require("webpack-dev-middleware");
+
+/***/ },
+/* 7 */
+/***/ function(module, exports) {
+
+	module.exports = require("webpack");
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	var path = __webpack_require__(9),
+	    webpack = __webpack_require__(7),
+	    ExtractTextPlugin = __webpack_require__(10);
+	
+	var vendorModules = ["jquery", "lodash"];
+	
+	// this addreses an oddity in weppack
+	var dirname = path.resolve("./");
+	
+	function createConfig(isDebug) {
+	    var devTool = isDebug ? "eval-source-map" : "source-map";
+	    var plugins = [new webpack.optimize.CommonsChunkPlugin("vendor", "vendor.js")];
+	
+	    var cssLoader = { test: /\.css$/, loader: "style!css" };
+	    var sassLoader = { test: /\.scss$/, loader: "style!css!sass" };
+	    var appEntry = ["./src/client/application.js"];
+	
+	    if (!isDebug) {
+	        plugins.push(new webpack.optimize.UglifyJsPlugin());
+	        plugins.push(new ExtractTextPlugin("[name].css"));
+	
+	        cssLoader.loader = ExtractTextPlugin.extract("style", "css");
+	        sassLoader.loader = ExtractTextPlugin.extract("style", "css!sass");
+	    } else {
+	        plugins.push(new webpack.HotModuleReplacementPlugin());
+	        appEntry.splice(0, 0, "webpack-hot-middleware/client");
+	    }
+	
+	    // -------------------------
+	    // WEBPACK CONFIG
+	    return {
+	        devtool: devTool,
+	        entry: {
+	            application: appEntry,
+	            vendor: vendorModules
+	        },
+	        output: {
+	            path: path.join(dirname, "public", "build"),
+	            filename: "[name].js",
+	            publicPath: "/build/"
+	        },
+	        resolve: {
+	            alias: {
+	                shared: path.join(dirname, "src", "shared")
+	            }
+	        },
+	        module: {
+	            loaders: [{ test: /\.js$/, loader: "babel", exclude: /node_modules/ }, { test: /\.js$/, loader: "eslint", exclude: /node_modules/ }, { test: /\.(png|jpg|jpeg|gif|woff|ttf|eot|svg|woff2)/, loader: "url-loader?limit=128" }, cssLoader, sassLoader]
+	        },
+	        plugins: plugins
+	
+	    };
+	    // -------------------------
+	}
+	
+	module.exports = createConfig(true);
+	module.exports.create = createConfig;
+
+/***/ },
+/* 9 */
+/***/ function(module, exports) {
+
+	module.exports = require("path");
+
+/***/ },
+/* 10 */
+/***/ function(module, exports) {
+
+	module.exports = require("extract-text-webpack-plugin");
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = webpackHotMiddleware;
+	
+	var helpers = __webpack_require__(12);
+	var pathMatch = helpers.pathMatch;
+	
+	function webpackHotMiddleware(compiler, opts) {
+	  opts = opts || {};
+	  opts.log = typeof opts.log == 'undefined' ? console.log.bind(console) : opts.log;
+	  opts.path = opts.path || '/__webpack_hmr';
+	  opts.heartbeat = opts.heartbeat || 10 * 1000;
+	
+	  var eventStream = createEventStream(opts.heartbeat);
+	  compiler.plugin("compile", function() {
+	    if (opts.log) opts.log("webpack building...");
+	    eventStream.publish({action: "building"});
+	  });
+	  compiler.plugin("done", function(statsResult) {
+	    statsResult = statsResult.toJson();
+	
+	    //for multi-compiler, stats will be an object with a 'children' array of stats
+	    var bundles = extractBundles(statsResult);
+	    bundles.forEach(function(stats) {
+	      if (opts.log) {
+	        opts.log("webpack built " + (stats.name ? stats.name + " " : "") +
+	          stats.hash + " in " + stats.time + "ms");
+	      }
+	      eventStream.publish({
+	        name: stats.name,
+	        action: "built",
+	        time: stats.time,
+	        hash: stats.hash,
+	        warnings: stats.warnings || [],
+	        errors: stats.errors || [],
+	        modules: buildModuleMap(stats.modules)
+	      });
+	    });
+	  });
+	  var middleware = function(req, res, next) {
+	    if (!pathMatch(req.url, opts.path)) return next();
+	    eventStream.handler(req, res);
+	  };
+	  middleware.publish = eventStream.publish;
+	  return middleware;
+	}
+	
+	function createEventStream(heartbeat) {
+	  var clientId = 0;
+	  var clients = {};
+	  function everyClient(fn) {
+	    Object.keys(clients).forEach(function(id) {
+	      fn(clients[id]);
+	    });
+	  }
+	  setInterval(function heartbeatTick() {
+	    everyClient(function(client) {
+	      client.write("data: \uD83D\uDC93\n\n");
+	    });
+	  }, heartbeat).unref();
+	  return {
+	    handler: function(req, res) {
+	      req.socket.setKeepAlive(true);
+	      res.writeHead(200, {
+	        'Access-Control-Allow-Origin': '*',
+	        'Content-Type': 'text/event-stream;charset=utf-8',
+	        'Transfer-Encoding': 'chunked',
+	        'Cache-Control': 'no-cache, no-transform',
+	        'Connection': 'keep-alive'
+	      });
+	      res.write('\n');
+	      var id = clientId++;
+	      clients[id] = res;
+	      req.on("close", function(){
+	        delete clients[id];
+	      });
+	    },
+	    publish: function(payload) {
+	      everyClient(function(client) {
+	          client.write("data: " + JSON.stringify(payload) + "\n\n");
+	      });
+	    }
+	  };
+	}
+	
+	function extractBundles(stats) {
+	  // Stats has modules, single bundle
+	  if (stats.modules) return [stats];
+	
+	  // Stats has children, multiple bundles
+	  if (stats.children && stats.children.length) return stats.children;
+	
+	  // Not sure, assume single
+	  return [stats];
+	}
+	
+	function buildModuleMap(modules) {
+	  var map = {};
+	  modules.forEach(function(module) {
+	    map[module.id] = module.name;
+	  });
+	  return map;
+	}
+
+
+/***/ },
+/* 12 */
+/***/ function(module, exports) {
+
+	exports.pathMatch = pathMatch;
+	
+	function pathMatch(url, path) {
+	  if (url == path) return true;
+	  var q = url.indexOf('?');
+	  if (q == -1) return false;
+	  return url.substring(0, q) == path;
+	}
+
 
 /***/ }
 /******/ ]);

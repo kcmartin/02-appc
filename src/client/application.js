@@ -1,9 +1,11 @@
-import $ from "jquery";
-import _ from "lodash";
 import {blegh} from "shared/test";
+import $ from "jquery";
 import "./application.scss";
 
 blegh();
 
-$("body").html("WHOA");
-console.log(_);
+$("body").html("Pretty rad");
+
+if (module.hot) {
+    module.hot.accept();
+}
