@@ -61,6 +61,11 @@ app.get("/", (req, res) => {
 // Socket
 io.on("connection", socket => {
     console.log(`Got connection from ${socket.request.connection.remoteAddress}`);
+
+    let index = 0;
+    setInterval(() => {
+        socket.emit("test", `On Index ${index++}`);
+    }, 1000);
 });
 
 //---------------------------

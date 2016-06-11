@@ -122,6 +122,11 @@
 	// Socket
 	io.on("connection", function (socket) {
 	    console.log("Got connection from " + socket.request.connection.remoteAddress);
+	
+	    var index = 0;
+	    setInterval(function () {
+	        socket.emit("test", "On Index " + index++);
+	    }, 1000);
 	});
 	
 	//---------------------------
@@ -193,7 +198,7 @@
 	    webpack = __webpack_require__(8),
 	    ExtractTextPlugin = __webpack_require__(11);
 	
-	var vendorModules = ["jquery", "lodash"];
+	var vendorModules = ["jquery", "lodash", "socket.io-client", "rxjs"];
 	
 	// this addreses an oddity in weppack
 	var dirname = path.resolve("./");
