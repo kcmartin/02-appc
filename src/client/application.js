@@ -4,16 +4,13 @@ import * as services from "./services";
 
 //-----------------------
 // PLAYGROUND
-services.server.on$("test")
-    .map(d => d + " whoa")
-    .subscribe(item => {
-        console.log(`Got ${item} from server!`);
+services.server.emitAction$("login", {username: "foo", password: "bar"})
+    .subscribe(result => {
+        if (result.error)
+            console.log(result.error);
+        else
+            console.log("We're logged in");
     });
-
-window.setTimeout(() => {
-    services.server.status$
-      .subscribe(status => console.log(status));
-}, 3000);
 
 
 
