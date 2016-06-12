@@ -10,6 +10,13 @@ services.server.on$("test")
         console.log(`Got ${item} from server!`);
     });
 
+window.setTimeout(() => {
+    services.server.status$
+      .subscribe(status => console.log(status));
+}, 3000);
+
+
+
 //-----------------------
 // Auth
 
