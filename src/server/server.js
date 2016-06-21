@@ -70,7 +70,7 @@ io.on("connection", socket => {
         // Problem: in the tutorial he changes the below line to:
         // This causes an error for me
         // return {user: creds.username};
-        return Observable.of({username: creds.username});
+        return Observable.of(`USER: ${creds.username}`).delay(3000);
     });
 });
 
