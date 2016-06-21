@@ -5,11 +5,10 @@ import * as services from "./services";
 //-----------------------
 // PLAYGROUND
 services.server.emitAction$("login", {username: "foo", password: "bar"})
-    .subscribe(result => {
-        if (result.error)
-            console.log(result.error);
-        else
-            console.log("We're logged in");
+    .subscribe(user => {
+        console.log("We're logged in: " + user);
+    }, error => {
+        console.error(error);
     });
 
 
