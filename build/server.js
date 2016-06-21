@@ -129,7 +129,7 @@
 	
 	    var client = new _observableSocket.ObservableSocket(socket);
 	    client.onAction("login", function (creds) {
-	        return { user: creds.username };
+	        return _rxjs.Observable.of({ username: creds.username });
 	    });
 	});
 	
@@ -191,21 +191,11 @@
 	});
 	exports.ObservableSocket = undefined;
 	
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	exports.clientMessage = clientMessage;
 	
 	var _rxjs = __webpack_require__(6);
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function clientMessage(message) {
-	    var error = new Error(message);
-	    error.clientMessage = message;
-	    return error;
-	}
 	
 	var ObservableSocket = exports.ObservableSocket = function () {
 	    _createClass(ObservableSocket, [{
@@ -289,9 +279,6 @@
 	            this._socket.emit(action, arg, id);
 	            return subject;
 	        }
-	
-	        // only register these once
-	
 	    }, {
 	        key: "_registerCallbacks",
 	        value: function _registerCallbacks(action) {
@@ -307,7 +294,6 @@
 	                request.complete();
 	            });
 	
-	            // handle error condition
 	            this._socket.on(action + ":fail", function (arg, id) {
 	                var request = _this2._popRequest(id);
 	                if (!request) return;
@@ -317,9 +303,6 @@
 	
 	            this._actionCallbacks[action] = true;
 	        }
-	
-	        // find request, remove and return it
-	
 	    }, {
 	        key: "_popRequest",
 	        value: function _popRequest(id) {
@@ -338,62 +321,14 @@
 	
 	    }, {
 	        key: "onAction",
-	        value: function onAction(action, callback) {
-	            var _this3 = this;
-	
-	            this._socket(action, function (arg, requestId) {
-	                try {
-	                    var _ret = function () {
-	                        var value = callback(arg);
-	                        if (!value) {
-	                            _this3._socket.emit(action, null, requestId);
-	                            return {
-	                                v: void 0
-	                            };
-	                        }
-	
-	                        // if value is not an Observable sequence
-	                        if (typeof value.subscribe !== "function") {
-	                            _this3._socket.emit(action, value, requestId);
-	                            return {
-	                                v: void 0
-	                            };
-	                        }
-	
-	                        var hasValue = false;
-	                        value.subscribe({
-	                            next: function next(item) {
-	                                if (hasValue) throw new Error("Action " + action + " produced more than one value");
-	
-	                                _this3._socket.emit(action, item, requestId);
-	                                hasValue = true;
-	                            },
-	
-	                            error: function error(_error) {
-	                                _this3._emitError(action, requestId, _error);
-	                                console.error(_error.stack || _error);
-	                            },
-	
-	                            // if no value
-	                            complete: function complete() {
-	                                if (!hasValue) _this3._socket.emit(action, null, requestId);
-	                            }
-	                        });
-	                    }();
-	
-	                    if ((typeof _ret === "undefined" ? "undefined" : _typeof(_ret)) === "object") return _ret.v;
-	                } catch (error) {
-	                    if (requestId) _this3._emitError(action, requestId, error);
-	
-	                    console.error(error.stack || error);
+	        value: function onAction(action) {
+	            this._socket.on(action, function () {
+	                for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	                    args[_key] = arguments[_key];
 	                }
+	
+	                console.log(args);
 	            });
-	        }
-	    }, {
-	        key: "_emitError",
-	        value: function _emitError(action, id, error) {
-	            var message = error && error.clientMessage || "Fatal Error";
-	            this._socket.emit(action + ":fail", { message: message }, id);
 	        }
 	    }]);
 
