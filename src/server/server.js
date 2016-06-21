@@ -67,7 +67,7 @@ io.on("connection", socket => {
 
     const client = new ObservableSocket(socket);
     client.onAction("login", creds => {
-        return Observable.of({username: creds.username});
+        return {user: creds.username};
     });
 });
 

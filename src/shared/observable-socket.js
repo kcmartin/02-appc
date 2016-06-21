@@ -1,5 +1,11 @@
 import {Observable, ReplaySubject} from "rxjs";
 
+export function clientMessage(message) {
+    const error = new Error(message);
+    error.clientMessage = message;
+    return error;
+}
+
 export class ObservableSocket {
     get isConnected() { return this._state.isConnected; }
     get isReconnecting() { return this._state.isReconnecting; }
@@ -53,6 +59,7 @@ export class ObservableSocket {
 
     }
 
+    // only register these once
     _registerCallbacks(action) {
         if (this._actionCallbacks.hasOwnProperty(action))
             return;
@@ -66,6 +73,7 @@ export class ObservableSocket {
             request.complete();
         });
 
+        // handle error condition
         this._socket.on(`${action}:fail`, (arg, id) => {
             const request = this._popRequest(id);
             if (!request)
@@ -77,6 +85,7 @@ export class ObservableSocket {
         this._actionCallbacks[action] = true;
     }
 
+    // find request, remove and return it
     _popRequest(id) {
         if (!this._requests.hasOwnProperty(id)) {
             console.error(`Event with ${id} was returned twice, or the server did not send back an ID!`);
@@ -90,10 +99,55 @@ export class ObservableSocket {
 
     //-------------------
     // On (Server Side)
-    onAction(action) {
-        this._socket.on(action, (...args) => {
-            console.log(args);
+    onAction(action, callback) {
+        this._socket(action, (arg, requestId) => {
+            try {
+                const value = callback(arg);
+                if (!value) {
+                    this._socket.emit(action, null, requestId);
+                    return;
+                }
+
+                // if value is not an Observable sequence
+                if (typeof(value.subscribe) !== "function") {
+                    this._socket.emit(action, value, requestId);
+                    return;
+                }
+
+                let hasValue = false;
+                value.subscribe({
+                    next: (item) => {
+                        if (hasValue)
+                            throw new Error(`Action ${action} produced more than one value`);
+
+                        this._socket.emit(action, item, requestId);
+                        hasValue = true;
+                    },
+
+                    error: (error) => {
+                        this._emitError(action, requestId, error);
+                        console.error(error.stack || error);
+                    },
+
+                    // if no value
+                    complete: () => {
+                        if (!hasValue)
+                            this._socket.emit(action, null, requestId);
+                    }
+                });
+            }
+            catch (error) {
+                if (requestId)
+                    this._emitError(action, requestId, error);
+
+                console.error(error.stack || error);
+            }
         });
+    }
+
+    _emitError(action, id, error) {
+        const message = (error && error.clientMessage) || "Fatal Error";
+        this._socket.emit(`${action}:fail`, {message}, id);
     }
 
 }
