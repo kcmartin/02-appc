@@ -70,9 +70,9 @@
 	
 	var _users = __webpack_require__(8);
 	
-	var _playlist = __webpack_require__(10);
+	var _playlist = __webpack_require__(11);
 	
-	var _chat = __webpack_require__(11);
+	var _chat = __webpack_require__(12);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -90,10 +90,10 @@
 	// Client Webpack
 	// middleware for DEV ONLY!!
 	if (process.env.USE_WEBPACK === "true") {
-	    var webpackMiddleware = __webpack_require__(12),
-	        webpackHotMiddleware = __webpack_require__(13),
-	        webpack = __webpack_require__(14),
-	        clientConfig = __webpack_require__(15);
+	    var webpackMiddleware = __webpack_require__(13),
+	        webpackHotMiddleware = __webpack_require__(14),
+	        webpack = __webpack_require__(15),
+	        clientConfig = __webpack_require__(16);
 	
 	    var compiler = webpack(clientConfig);
 	    app.use(webpackMiddleware(compiler, {
@@ -453,6 +453,18 @@
 	                }
 	            });
 	        }
+	
+	        // register multiple actions with the same object
+	
+	    }, {
+	        key: "onActions",
+	        value: function onActions(actions) {
+	            for (var action in actions) {
+	                if (!actions.hasOwnProperty(action)) continue;
+	
+	                this.onAction(action, actions[action]);
+	            }
+	        }
 	    }, {
 	        key: "_emitError",
 	        value: function _emitError(action, id, error) {
@@ -475,7 +487,15 @@
 	});
 	exports.UsersModule = undefined;
 	
-	var _module = __webpack_require__(9);
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _lodash = __webpack_require__(9);
+	
+	var _lodash2 = _interopRequireDefault(_lodash);
+	
+	var _module = __webpack_require__(10);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
@@ -492,14 +512,52 @@
 	        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(UsersModule).call(this));
 	
 	        _this._io = io;
+	        _this._userList = [{ name: "Foo", color: _this.getColorForUsername("Foo") }, { name: "Bar", color: _this.getColorForUsername("Bar") }, { name: "Baz", color: _this.getColorForUsername("Baz") }];
 	        return _this;
 	    }
 	
+	    _createClass(UsersModule, [{
+	        key: "getColorForUsername",
+	        value: function getColorForUsername(username) {
+	            var hash = _lodash2.default.reduce(username, function (hash, ch) {
+	                return ch.charCodeAt(0) + (hash << 6) + (hash << 16) - hash;
+	            }, 0);
+	
+	            hash = Math.abs(hash);
+	            var hue = hash % 360,
+	                saturation = hash % 25 + 70,
+	                lightness = 100 - (hash % 15 + 35);
+	
+	            return "hsl(" + hue + ", " + saturation + "%, " + lightness + "%)";
+	        }
+	    }, {
+	        key: "registerClient",
+	        value: function registerClient(client) {
+	            var _this2 = this;
+	
+	            client.onActions({
+	                "users:list": function usersList() {
+	                    return _this2._userList;
+	                },
+	
+	                "auth:login": function authLogin() {},
+	
+	                "auth:logout": function authLogout() {}
+	            });
+	        }
+	    }]);
+
 	    return UsersModule;
 	}(_module.ModuleBase);
 
 /***/ },
 /* 9 */
+/***/ function(module, exports) {
+
+	module.exports = require("lodash");
+
+/***/ },
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -539,7 +597,7 @@
 	}();
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -549,7 +607,7 @@
 	});
 	exports.PlaylistModule = undefined;
 	
-	var _module = __webpack_require__(9);
+	var _module = __webpack_require__(10);
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
@@ -576,7 +634,7 @@
 	}(_module.ModuleBase);
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -586,7 +644,7 @@
 	});
 	exports.ChatModule = undefined;
 	
-	var _module = __webpack_require__(9);
+	var _module = __webpack_require__(10);
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
@@ -611,32 +669,32 @@
 	}(_module.ModuleBase);
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports) {
 
 	module.exports = require("webpack-dev-middleware");
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports) {
 
 	module.exports = require("webpack-hot-middleware");
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports) {
 
 	module.exports = require("webpack");
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	
-	var path = __webpack_require__(16),
-	    webpack = __webpack_require__(14),
-	    ExtractTextPlugin = __webpack_require__(17);
+	var path = __webpack_require__(17),
+	    webpack = __webpack_require__(15),
+	    ExtractTextPlugin = __webpack_require__(18);
 	
 	var vendorModules = ["jquery", "lodash", "socket.io-client", "rxjs"];
 	
@@ -693,13 +751,13 @@
 	module.exports.create = createConfig;
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports) {
 
 	module.exports = require("path");
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports) {
 
 	module.exports = require("extract-text-webpack-plugin");
