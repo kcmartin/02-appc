@@ -540,6 +540,7 @@
 	                var username = "New user " + index;
 	                var user = { name: username, color: _this2.getColorForUsername(username) };
 	                client.emit("users:added", user);
+	                index++;
 	            }, 2000);
 	
 	            client.onActions({
