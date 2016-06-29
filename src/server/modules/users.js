@@ -29,7 +29,10 @@ export class UsersModule extends ModuleBase {
 
     getUserForClient(client) {
         const auth = client[AuthContext];
-        return auth ? auth : null;
+        if (!auth)
+            return null;
+
+        return auth.isLoggedIn ? auth : null;
     }
 
     loginClient$(client, username) {
