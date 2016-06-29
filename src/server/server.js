@@ -15,6 +15,7 @@ import {ChatModule} from "./modules/chat";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
+// this is a test
 //---------------------------
 // Setup
 const app = express();

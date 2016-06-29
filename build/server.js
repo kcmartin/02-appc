@@ -72,9 +72,9 @@
 	
 	var _users = __webpack_require__(9);
 	
-	var _playlist = __webpack_require__(14);
+	var _playlist = __webpack_require__(12);
 	
-	var _chat = __webpack_require__(15);
+	var _chat = __webpack_require__(13);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -82,6 +82,7 @@
 	
 	var isDevelopment = process.env.NODE_ENV !== "production";
 	
+	// this is a test
 	//---------------------------
 	// Setup
 	var app = (0, _express2.default)();
@@ -92,10 +93,10 @@
 	// Client Webpack
 	// middleware for DEV ONLY!!
 	if (process.env.USE_WEBPACK === "true") {
-	    var webpackMiddleware = __webpack_require__(16),
-	        webpackHotMiddleware = __webpack_require__(17),
-	        webpack = __webpack_require__(18),
-	        clientConfig = __webpack_require__(19);
+	    var webpackMiddleware = __webpack_require__(14),
+	        webpackHotMiddleware = __webpack_require__(15),
+	        webpack = __webpack_require__(16),
+	        clientConfig = __webpack_require__(17);
 	
 	    var compiler = webpack(clientConfig);
 	    app.use(webpackMiddleware(compiler, {
@@ -532,7 +533,7 @@
 	
 	var _module = __webpack_require__(11);
 	
-	var _users = __webpack_require__(12);
+	var _users = __webpack_require__(20);
 	
 	var _observableSocket = __webpack_require__(8);
 	
@@ -684,10 +685,176 @@
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
+	exports.PlaylistModule = undefined;
+	
+	var _module = __webpack_require__(11);
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var PlaylistModule = exports.PlaylistModule = function (_ModuleBase) {
+	    _inherits(PlaylistModule, _ModuleBase);
+	
+	    function PlaylistModule(io, usersModule, playlistRepository, videoServices) {
+	        _classCallCheck(this, PlaylistModule);
+	
+	        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(PlaylistModule).call(this));
+	
+	        _this._io = io;
+	        _this._users = usersModule;
+	        _this._repository = playlistRepository;
+	        _this._services = videoServices;
+	        return _this;
+	    }
+	
+	    return PlaylistModule;
+	}(_module.ModuleBase);
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	exports.ChatModule = undefined;
+	
+	var _module = __webpack_require__(11);
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var ChatModule = exports.ChatModule = function (_ModuleBase) {
+	    _inherits(ChatModule, _ModuleBase);
+	
+	    function ChatModule(io, usersModule) {
+	        _classCallCheck(this, ChatModule);
+	
+	        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ChatModule).call(this));
+	
+	        _this._io = io;
+	        _this._users = usersModule;
+	        return _this;
+	    }
+	
+	    return ChatModule;
+	}(_module.ModuleBase);
+
+/***/ },
+/* 14 */
+/***/ function(module, exports) {
+
+	module.exports = require("webpack-dev-middleware");
+
+/***/ },
+/* 15 */
+/***/ function(module, exports) {
+
+	module.exports = require("webpack-hot-middleware");
+
+/***/ },
+/* 16 */
+/***/ function(module, exports) {
+
+	module.exports = require("webpack");
+
+/***/ },
+/* 17 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	var path = __webpack_require__(18),
+	    webpack = __webpack_require__(16),
+	    ExtractTextPlugin = __webpack_require__(19);
+	
+	var vendorModules = ["jquery", "lodash", "socket.io-client", "rxjs"];
+	
+	// this addreses an oddity in weppack
+	var dirname = path.resolve("./");
+	
+	function createConfig(isDebug) {
+	    var devTool = isDebug ? "eval-source-map" : "source-map";
+	    var plugins = [new webpack.optimize.CommonsChunkPlugin("vendor", "vendor.js")];
+	
+	    var cssLoader = { test: /\.css$/, loader: "style!css" };
+	    var sassLoader = { test: /\.scss$/, loader: "style!css!sass" };
+	    var appEntry = ["./src/client/application.js"];
+	
+	    if (!isDebug) {
+	        plugins.push(new webpack.optimize.UglifyJsPlugin());
+	        plugins.push(new ExtractTextPlugin("[name].css"));
+	
+	        cssLoader.loader = ExtractTextPlugin.extract("style", "css");
+	        sassLoader.loader = ExtractTextPlugin.extract("style", "css!sass");
+	    } else {
+	        plugins.push(new webpack.HotModuleReplacementPlugin());
+	        appEntry.splice(0, 0, "webpack-hot-middleware/client");
+	    }
+	
+	    // -------------------------
+	    // WEBPACK CONFIG
+	    return {
+	        devtool: devTool,
+	        entry: {
+	            application: appEntry,
+	            vendor: vendorModules
+	        },
+	        output: {
+	            path: path.join(dirname, "public", "build"),
+	            filename: "[name].js",
+	            publicPath: "/build/"
+	        },
+	        resolve: {
+	            alias: {
+	                shared: path.join(dirname, "src", "shared")
+	            }
+	        },
+	        module: {
+	            loaders: [{ test: /\.js$/, loader: "babel", exclude: /node_modules/ }, { test: /\.js$/, loader: "eslint", exclude: /node_modules/ }, { test: /\.(png|jpg|jpeg|gif|woff|ttf|eot|svg|woff2)/, loader: "url-loader?limit=128" }, cssLoader, sassLoader]
+	        },
+	        plugins: plugins
+	
+	    };
+	    // -------------------------
+	}
+	
+	module.exports = createConfig(true);
+	module.exports.create = createConfig;
+
+/***/ },
+/* 18 */
+/***/ function(module, exports) {
+
+	module.exports = require("path");
+
+/***/ },
+/* 19 */
+/***/ function(module, exports) {
+
+	module.exports = require("extract-text-webpack-plugin");
+
+/***/ },
+/* 20 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
 	exports.USERNAME_REGEX = undefined;
 	exports.validateLogin = validateLogin;
 	
-	var _validator = __webpack_require__(13);
+	var _validator = __webpack_require__(21);
 	
 	var USERNAME_REGEX = exports.USERNAME_REGEX = /^[\w\d_-]+$/; // general vaildation for users
 	
@@ -703,7 +870,7 @@
 	}
 
 /***/ },
-/* 13 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -767,172 +934,6 @@
 
 	    return Validator;
 	}();
-
-/***/ },
-/* 14 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	
-	Object.defineProperty(exports, "__esModule", {
-	    value: true
-	});
-	exports.PlaylistModule = undefined;
-	
-	var _module = __webpack_require__(11);
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	var PlaylistModule = exports.PlaylistModule = function (_ModuleBase) {
-	    _inherits(PlaylistModule, _ModuleBase);
-	
-	    function PlaylistModule(io, usersModule, playlistRepository, videoServices) {
-	        _classCallCheck(this, PlaylistModule);
-	
-	        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(PlaylistModule).call(this));
-	
-	        _this._io = io;
-	        _this._users = usersModule;
-	        _this._repository = playlistRepository;
-	        _this._services = videoServices;
-	        return _this;
-	    }
-	
-	    return PlaylistModule;
-	}(_module.ModuleBase);
-
-/***/ },
-/* 15 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	
-	Object.defineProperty(exports, "__esModule", {
-	    value: true
-	});
-	exports.ChatModule = undefined;
-	
-	var _module = __webpack_require__(11);
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	var ChatModule = exports.ChatModule = function (_ModuleBase) {
-	    _inherits(ChatModule, _ModuleBase);
-	
-	    function ChatModule(io, usersModule) {
-	        _classCallCheck(this, ChatModule);
-	
-	        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ChatModule).call(this));
-	
-	        _this._io = io;
-	        _this._users = usersModule;
-	        return _this;
-	    }
-	
-	    return ChatModule;
-	}(_module.ModuleBase);
-
-/***/ },
-/* 16 */
-/***/ function(module, exports) {
-
-	module.exports = require("webpack-dev-middleware");
-
-/***/ },
-/* 17 */
-/***/ function(module, exports) {
-
-	module.exports = require("webpack-hot-middleware");
-
-/***/ },
-/* 18 */
-/***/ function(module, exports) {
-
-	module.exports = require("webpack");
-
-/***/ },
-/* 19 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	
-	var path = __webpack_require__(20),
-	    webpack = __webpack_require__(18),
-	    ExtractTextPlugin = __webpack_require__(21);
-	
-	var vendorModules = ["jquery", "lodash", "socket.io-client", "rxjs"];
-	
-	// this addreses an oddity in weppack
-	var dirname = path.resolve("./");
-	
-	function createConfig(isDebug) {
-	    var devTool = isDebug ? "eval-source-map" : "source-map";
-	    var plugins = [new webpack.optimize.CommonsChunkPlugin("vendor", "vendor.js")];
-	
-	    var cssLoader = { test: /\.css$/, loader: "style!css" };
-	    var sassLoader = { test: /\.scss$/, loader: "style!css!sass" };
-	    var appEntry = ["./src/client/application.js"];
-	
-	    if (!isDebug) {
-	        plugins.push(new webpack.optimize.UglifyJsPlugin());
-	        plugins.push(new ExtractTextPlugin("[name].css"));
-	
-	        cssLoader.loader = ExtractTextPlugin.extract("style", "css");
-	        sassLoader.loader = ExtractTextPlugin.extract("style", "css!sass");
-	    } else {
-	        plugins.push(new webpack.HotModuleReplacementPlugin());
-	        appEntry.splice(0, 0, "webpack-hot-middleware/client");
-	    }
-	
-	    // -------------------------
-	    // WEBPACK CONFIG
-	    return {
-	        devtool: devTool,
-	        entry: {
-	            application: appEntry,
-	            vendor: vendorModules
-	        },
-	        output: {
-	            path: path.join(dirname, "public", "build"),
-	            filename: "[name].js",
-	            publicPath: "/build/"
-	        },
-	        resolve: {
-	            alias: {
-	                shared: path.join(dirname, "src", "shared")
-	            }
-	        },
-	        module: {
-	            loaders: [{ test: /\.js$/, loader: "babel", exclude: /node_modules/ }, { test: /\.js$/, loader: "eslint", exclude: /node_modules/ }, { test: /\.(png|jpg|jpeg|gif|woff|ttf|eot|svg|woff2)/, loader: "url-loader?limit=128" }, cssLoader, sassLoader]
-	        },
-	        plugins: plugins
-	
-	    };
-	    // -------------------------
-	}
-	
-	module.exports = createConfig(true);
-	module.exports.create = createConfig;
-
-/***/ },
-/* 20 */
-/***/ function(module, exports) {
-
-	module.exports = require("path");
-
-/***/ },
-/* 21 */
-/***/ function(module, exports) {
-
-	module.exports = require("extract-text-webpack-plugin");
 
 /***/ }
 /******/ ]);
