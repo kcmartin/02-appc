@@ -72,9 +72,9 @@
 	
 	var _users = __webpack_require__(9);
 	
-	var _playlist = __webpack_require__(12);
+	var _playlist = __webpack_require__(14);
 	
-	var _chat = __webpack_require__(13);
+	var _chat = __webpack_require__(15);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -92,10 +92,10 @@
 	// Client Webpack
 	// middleware for DEV ONLY!!
 	if (process.env.USE_WEBPACK === "true") {
-	    var webpackMiddleware = __webpack_require__(14),
-	        webpackHotMiddleware = __webpack_require__(15),
-	        webpack = __webpack_require__(16),
-	        clientConfig = __webpack_require__(17);
+	    var webpackMiddleware = __webpack_require__(16),
+	        webpackHotMiddleware = __webpack_require__(17),
+	        webpack = __webpack_require__(18),
+	        clientConfig = __webpack_require__(19);
 	
 	    var compiler = webpack(clientConfig);
 	    app.use(webpackMiddleware(compiler, {
@@ -291,6 +291,8 @@
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
 	exports.clientMessage = clientMessage;
+	exports.fail = fail;
+	exports.success = success;
 	
 	var _rxjs = __webpack_require__(6);
 	
@@ -300,6 +302,17 @@
 	    var error = new Error(message);
 	    error.clientMessage = message;
 	    return error;
+	}
+	
+	//helper function fail method
+	function fail(message) {
+	    return _rxjs.Observable.throw({ clientMessage: message });
+	}
+	
+	// cache success observable
+	var successObservable = _rxjs.Observable.empty();
+	function success() {
+	    return successObservable;
 	}
 	
 	var ObservableSocket = exports.ObservableSocket = function () {
@@ -515,7 +528,13 @@
 	
 	var _lodash2 = _interopRequireDefault(_lodash);
 	
+	var _rxjs = __webpack_require__(6);
+	
 	var _module = __webpack_require__(11);
+	
+	var _users = __webpack_require__(12);
+	
+	var _observableSocket = __webpack_require__(8);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -524,6 +543,8 @@
 	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 	
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var AuthContext = Symbol("AuthContext");
 	
 	var UsersModule = exports.UsersModule = function (_ModuleBase) {
 	    _inherits(UsersModule, _ModuleBase);
@@ -534,7 +555,8 @@
 	        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(UsersModule).call(this));
 	
 	        _this._io = io;
-	        _this._userList = [{ name: "Foo", color: _this.getColorForUsername("Foo") }, { name: "Bar", color: _this.getColorForUsername("Bar") }, { name: "Baz", color: _this.getColorForUsername("Baz") }];
+	        _this._userList = [];
+	        _this._users = {};
 	        return _this;
 	    }
 	
@@ -553,24 +575,51 @@
 	            return "hsl(" + hue + ", " + saturation + "%, " + lightness + "%)";
 	        }
 	    }, {
+	        key: "getUserForClient",
+	        value: function getUserForClient(client) {
+	            var auth = client[AuthContext];
+	            return auth ? auth : null;
+	        }
+	    }, {
+	        key: "loginClient$",
+	        value: function loginClient$(client, username) {
+	            username = username.trim();
+	
+	            var validator = (0, _users.validateLogin)(username);
+	            if (!validator.isValid) return validator.throw$();
+	
+	            // if username is already taken
+	            if (this._users.hasOwnProperty(username)) return (0, _observableSocket.fail)("Username " + username + " is already taken");
+	
+	            var auth = client[AuthContext] || (client[AuthContext] = {});
+	            if (auth.isLoggedIn) return (0, _observableSocket.fail)("You are already logged in");
+	
+	            auth.name = username;
+	            auth.color = this.getColorForUsername(username);
+	            auth.isLoggedIn = true;
+	
+	            this._users[username] = client;
+	            this._userList.push(auth);
+	
+	            this.io.emit("users:added", auth);
+	            console.log("User " + username + " logged in");
+	            return _rxjs.Observable.of(auth);
+	        }
+	    }, {
 	        key: "registerClient",
 	        value: function registerClient(client) {
 	            var _this2 = this;
-	
-	            var index = 0;
-	            setInterval(function () {
-	                var username = "New user " + index;
-	                var user = { name: username, color: _this2.getColorForUsername(username) };
-	                client.emit("users:added", user);
-	                index++;
-	            }, 2000);
 	
 	            client.onActions({
 	                "users:list": function usersList() {
 	                    return _this2._userList;
 	                },
 	
-	                "auth:login": function authLogin() {},
+	                "auth:login": function authLogin(_ref) {
+	                    var name = _ref.name;
+	
+	                    return _this2.loginClient$(client, name);
+	                },
 	
 	                "auth:logout": function authLogout() {}
 	            });
@@ -635,6 +684,99 @@
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
+	exports.USERNAME_REGEX = undefined;
+	exports.validateLogin = validateLogin;
+	
+	var _validator = __webpack_require__(13);
+	
+	var USERNAME_REGEX = exports.USERNAME_REGEX = /^[\w\d_-]+$/; // general vaildation for users
+	
+	
+	function validateLogin(username) {
+	    var validator = new _validator.Validator();
+	
+	    if (username.length >= 20) validator.error("Username must be fewer than 20 characters");
+	
+	    if (USERNAME_REGEX.test(username)) validator.error("Username can only contain numbers, digits, underscores and dashes");
+	
+	    return validator;
+	}
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	exports.Validator = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _rxjs = __webpack_require__(6);
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var Validator = exports.Validator = function () {
+	    _createClass(Validator, [{
+	        key: "isValid",
+	        get: function get() {
+	            return !this._errors.length;
+	        }
+	    }, {
+	        key: "errors",
+	        get: function get() {
+	            return this._errors;
+	        }
+	    }, {
+	        key: "message",
+	        get: function get() {
+	            return this._errors.join(", ");
+	        }
+	    }]);
+	
+	    function Validator() {
+	        _classCallCheck(this, Validator);
+	
+	        this._errors = [];
+	    }
+	
+	    _createClass(Validator, [{
+	        key: "error",
+	        value: function error(message) {
+	            this._errors.push(message);
+	        }
+	    }, {
+	        key: "toObject",
+	        value: function toObject() {
+	            if (this.isValid) return {};
+	
+	            return {
+	                errors: this._errors,
+	                message: this._message
+	            };
+	        }
+	    }, {
+	        key: "throw$",
+	        value: function throw$() {
+	            return _rxjs.Observable.throw({ clientMessage: this.message });
+	        }
+	    }]);
+
+	    return Validator;
+	}();
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
 	exports.PlaylistModule = undefined;
 	
 	var _module = __webpack_require__(11);
@@ -664,7 +806,7 @@
 	}(_module.ModuleBase);
 
 /***/ },
-/* 13 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -699,32 +841,32 @@
 	}(_module.ModuleBase);
 
 /***/ },
-/* 14 */
+/* 16 */
 /***/ function(module, exports) {
 
 	module.exports = require("webpack-dev-middleware");
 
 /***/ },
-/* 15 */
+/* 17 */
 /***/ function(module, exports) {
 
 	module.exports = require("webpack-hot-middleware");
 
 /***/ },
-/* 16 */
+/* 18 */
 /***/ function(module, exports) {
 
 	module.exports = require("webpack");
 
 /***/ },
-/* 17 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	
-	var path = __webpack_require__(18),
-	    webpack = __webpack_require__(16),
-	    ExtractTextPlugin = __webpack_require__(19);
+	var path = __webpack_require__(20),
+	    webpack = __webpack_require__(18),
+	    ExtractTextPlugin = __webpack_require__(21);
 	
 	var vendorModules = ["jquery", "lodash", "socket.io-client", "rxjs"];
 	
@@ -781,13 +923,13 @@
 	module.exports.create = createConfig;
 
 /***/ },
-/* 18 */
+/* 20 */
 /***/ function(module, exports) {
 
 	module.exports = require("path");
 
 /***/ },
-/* 19 */
+/* 21 */
 /***/ function(module, exports) {
 
 	module.exports = require("extract-text-webpack-plugin");
